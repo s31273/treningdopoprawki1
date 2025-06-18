@@ -124,7 +124,35 @@ public class DbService(AppDbContext data) : IDbService
         data.Readers.Remove(reader);
         data.SaveChanges();
     }
-    
+    //ktora opcja lepsza i za wiecej punktow? trycatch czy ta bez tego wystarczy?
+    /*public async Task DeleteReaderAsync(int readerId)
+    {
+        var reader = await data.Readers.FirstOrDefaultAsync(r => r.Id == readerId);
+        if (reader == null)
+        {
+            throw new NotFoundException("Taki użytkownik nie istnieje.");
+        }
+
+        await using var transaction = await data.Database.BeginTransactionAsync();
+        try
+        {
+            var borrowings = await data.Borrowings.Where(b => b.ReaderId == readerId).ToListAsync();
+            var readerBooks = await data.ReaderBooks.Where(b => b.ReaderId == readerId).ToListAsync();
+
+            data.ReaderBooks.RemoveRange(readerBooks);
+            data.Borrowings.RemoveRange(borrowings);
+            data.Readers.Remove(reader);
+
+            await data.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }*/
+
     
    public async Task<GetReaderDto> UpdateReaderAsync(UpdateReaderDto updateReaderDto, int readerId)
 {
