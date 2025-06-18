@@ -152,6 +152,7 @@ public class DbService(AppDbContext data) : IDbService
             throw;
         }
     }*/
+    
 
     
    public async Task<GetReaderDto> UpdateReaderAsync(UpdateReaderDto updateReaderDto, int readerId)
