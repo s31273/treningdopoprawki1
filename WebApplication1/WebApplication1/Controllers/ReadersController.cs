@@ -15,7 +15,7 @@ public class ReadersController(IDbService service) : ControllerBase
     public async Task<IActionResult> GetReadersDetails()
     {
         return Ok(await service.GetAllReadersAsync());
-        
+
     }
 
     [HttpPost]
@@ -31,7 +31,7 @@ public class ReadersController(IDbService service) : ControllerBase
             return NotFound(e.Message);
         }
     }
-    
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteReader([FromRoute] int id)
     {
@@ -46,5 +46,21 @@ public class ReadersController(IDbService service) : ControllerBase
         }
     }
 
-    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateReader([FromRoute] int id, [FromBody] UpdateReaderDto updateReaderDto)
+    {
+        try
+        {
+            var update = await service.UpdateReaderAsync(updateReaderDto, id);
+            return Ok(update);
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
+
+
+
 }

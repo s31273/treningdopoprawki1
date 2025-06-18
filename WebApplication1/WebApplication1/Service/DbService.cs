@@ -11,7 +11,8 @@ public interface IDbService
 {
     public Task <ICollection<GetReaderDto>> GetAllReadersAsync();
     public Task<GetReaderDto> CreateReaderAsync(CreateReaderDto createReaderDto);
-    public Task DeleteReaderAsync(int readerId);
+    public Task DeleteReaderAsync(int readerId); 
+    public Task<GetReaderDto> UpdateReaderAsync(UpdateReaderDto updateReaderDto, int readerId);
 }
 
 public class DbService(AppDbContext data) : IDbService
@@ -123,6 +124,81 @@ public class DbService(AppDbContext data) : IDbService
         data.Readers.Remove(reader);
         data.SaveChanges();
     }
+    
+    
+   public async Task<GetReaderDto> UpdateReaderAsync(UpdateReaderDto updateReaderDto, int readerId)
+{
+    using var transaction = await data.Database.BeginTransactionAsync();
+
+    try
+    {
+        var reader = await data.Readers.FirstOrDefaultAsync(r => r.Id == readerId);
+        if (reader == null)
+            throw new NotFoundException("Taki uzytkownik nie istnieje.");
+
+        reader.Name = updateReaderDto.Name;
+        reader.Email = updateReaderDto.Email;
+
+        var borrowings = await data.Borrowings.Where(b => b.ReaderId == readerId).ToListAsync();
+        var readerBooks = await data.ReaderBooks.Where(b => b.ReaderId == readerId).ToListAsync();
+
+        data.Borrowings.RemoveRange(borrowings);
+        data.ReaderBooks.RemoveRange(readerBooks);
+
+        foreach (var borrowing in updateReaderDto.Borrowings)
+        {
+            var existingBook = await data.Books.FirstOrDefaultAsync(b => b.Title == borrowing.Title);
+
+            if (existingBook == null)
+            {
+                existingBook = new Book
+                {
+                    Title = borrowing.Title,
+                    Genre = borrowing.Genre
+                };
+                data.Books.Add(existingBook);
+                await data.SaveChangesAsync(); 
+            }
+
+            data.ReaderBooks.Add(new ReaderBook
+            {
+                Reader = reader,
+                Book = existingBook
+            });
+
+            data.Borrowings.Add(new Borrowing
+            {
+                Reader = reader,
+                Book = existingBook,
+                BorrowDate = borrowing.BorrowDate,
+                ReturnStatus = borrowing.ReturnStatus
+            });
+        }
+
+        await data.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return new GetReaderDto
+        {
+            Id = reader.Id,
+            Name = reader.Name,
+            Email = reader.Email,
+            Books = reader.Borrowings.Select(ga => new GetBookDetailsForReaderDto
+            {
+                Title = ga.Book.Title,
+                Genre = ga.Book.Genre,
+                BorrowDate = ga.BorrowDate,
+                ReturnStatus = ga.ReturnStatus
+            }).ToList()
+        };
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
+
     
     
 }
