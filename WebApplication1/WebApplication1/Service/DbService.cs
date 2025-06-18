@@ -11,6 +11,7 @@ public interface IDbService
 {
     public Task <ICollection<GetReaderDto>> GetAllReadersAsync();
     public Task<GetReaderDto> CreateReaderAsync(CreateReaderDto createReaderDto);
+    public Task DeleteReaderAsync(int readerId);
 }
 
 public class DbService(AppDbContext data) : IDbService
@@ -107,6 +108,23 @@ public class DbService(AppDbContext data) : IDbService
             throw;
         } 
     }
+
+    public async Task DeleteReaderAsync(int readerId)
+    {
+        var reader = await data.Readers.FirstOrDefaultAsync(r => r.Id == readerId);
+        if (reader == null)
+        {
+            throw new NotFoundException("Taki uzytkownik nie istnieje.");
+        }
+        var borrowings = await data.Borrowings.Where(b => b.ReaderId == readerId).ToListAsync();
+        var readerBooks = await data.ReaderBooks.Where(b => b.ReaderId == readerId).ToListAsync();
+        data.ReaderBooks.RemoveRange(readerBooks);
+        data.Borrowings.RemoveRange(borrowings);
+        data.Readers.Remove(reader);
+        data.SaveChanges();
+    }
+    
+    
 }
 
 

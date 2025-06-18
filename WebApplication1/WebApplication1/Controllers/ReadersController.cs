@@ -32,5 +32,19 @@ public class ReadersController(IDbService service) : ControllerBase
         }
     }
     
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteReader([FromRoute] int id)
+    {
+        try
+        {
+            await service.DeleteReaderAsync(id);
+            return Ok($"Usunąłem studenta o id {id}");
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
+
     
 }
